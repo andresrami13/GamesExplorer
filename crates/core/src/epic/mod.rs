@@ -71,14 +71,13 @@ fn read_item(path: &Path) -> Option<Game> {
     let mut game = Game::new(
         format!("epic:{}", item.app_name),
         Source::Epic,
+        item.display_name,
         LaunchTarget::Epic {
             namespace: item.catalog_namespace,
             catalog_item_id: item.catalog_item_id,
             app_name: item.app_name,
         },
     );
-    game.title = Some(item.display_name);
-    game.installed = true;
     game.install_dir = item.install_location;
     Some(game)
 }

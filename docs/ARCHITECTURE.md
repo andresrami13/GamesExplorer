@@ -121,10 +121,17 @@ GamesExplorer/
 
 ## 5. Hitos
 
-- **a)** Lectores de Steam y Epic + caché de imágenes + una cuadrícula mínima para verlo. Qué probar: que aparecen tus juegos instalados con su portada, desconectado de internet incluido.
+- **a)** Lectores de Steam y Epic + caché de imágenes + una cuadrícula mínima. Hecho.
+- **Hero + carrusel** (adelantado a petición del usuario, antes del Álbum): solo juegos instalados, arte grande con parallax lento, carrusel con muelle a 60 fps, teclado, arrastre, rueda y mando, pestañas Instalados/Recientes y búsqueda.
 - **b)** Modo Álbum con curl 3D, teclado, arrastre de esquina, sonido y mando.
-- **c)** Modos Hero + carrusel y Funda + disco.
+- **c)** Modo Funda + disco.
 - **d)** Ajustes, juegos manuales con .exe, SteamGridDB opcional, favoritos, colecciones, filtros por género, F11 y modo TV, empaquetado MSIX.
+
+Decisiones del modo Hero:
+- La pista del carrusel se mueve con un muelle propio que escribe `transform` en el DOM en cada fotograma; React solo re-renderiza cuando cambia la portada central. No se usa Framer Motion: para un solo muelle no compensa la dependencia.
+- Solo se montan unas 16 portadas alrededor de la actual, sea cual sea el tamaño de la biblioteca.
+- El arte grande cambia 140 ms después de la última pulsación y cuando la imagen ya está decodificada, con fundido cruzado; se precargan el anterior y el siguiente.
+- Los movimientos lentos (barrido con zoom, deriva del logo, balanceo del marco) son animaciones CSS en el compositor; se desactivan con `prefers-reduced-motion`.
 
 **Cambio respecto a la propuesta:** la lógica vive en `crates/core` y no en `src-tauri`. Así se compila y se prueba sin WebView2 (también en CI y en Linux) y `src-tauri` queda como capa fina.
 
