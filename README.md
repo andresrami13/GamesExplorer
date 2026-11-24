@@ -3,9 +3,21 @@
 Tu biblioteca de **Steam** y **Epic Games** como un álbum. Lee todo en local, sin pedir
 usuario ni contraseña, y lanza los juegos a través de su launcher.
 
-Estado: **hito (a)**. Ya funcionan la lectura de la biblioteca, la caché de imágenes, el color
-dominante y los metadatos de la tienda, con una cuadrícula mínima para verlos. Los modos
-Álbum, Hero y Funda llegan en los hitos siguientes ([arquitectura](docs/ARCHITECTURE.md)).
+Estado: **modo Hero + carrusel**. Muestra los juegos instalados con su arte grande en
+movimiento lento y un carrusel que se recorre con teclado, ratón, arrastre o mando.
+Los modos Álbum y Funda llegan después ([arquitectura](docs/ARCHITECTURE.md)).
+
+## Controles
+
+| Acción | Teclado | Ratón | Mando |
+| --- | --- | --- | --- |
+| Juego anterior / siguiente | ← / → | Rueda, o arrastrar el carrusel | Cruceta o stick izquierdo (mantener repite) |
+| Saltar 5 juegos | RePág / AvPág | | LB / RB |
+| Primero / último | Inicio / Fin | | |
+| Jugar | Enter | Clic en la portada seleccionada o en "Jugar" | A |
+| Abrir en Steam o Epic | | "Abrir en…" | X |
+| Buscar | / (Esc para salir) | | |
+| Inclinar el arte | | Mover el ratón | Stick derecho |
 
 ## Requisitos (Windows 10/11)
 
@@ -36,7 +48,7 @@ El paquete MSIX se añade en el hito (d).
 
 ```powershell
 cargo test --workspace   # parser VDF, Steam, Epic, caché, color, Store API
-npm test                 # formato y URLs de imágenes del frontend
+npm test                 # orden, búsqueda, formato y URLs de imágenes del frontend
 ```
 
 ## De dónde salen los datos
@@ -60,6 +72,6 @@ Variables de entorno para pruebas: `MIS_JUEGOS_STEAM_ROOT` fuerza la carpeta de 
 
 ## Limitaciones conocidas
 
-- Sin API key solo se ven los juegos **instalados** y los **jugados en este PC**: Steam no guarda en local la lista completa de juegos comprados. La API key opcional llega en el hito (d).
-- Los juegos de Steam jugados pero no instalados aparecen como "App 1234" hasta que la Store API devuelve su nombre.
+- Solo se muestran juegos **instalados** y por completo (una descarga a medias no aparece).
+- Las apps de Steam que la tienda no clasifica como juego (herramientas, SDK, bandas sonoras) se ocultan en cuanto llegan sus metadatos.
 - Epic no tiene un CDN público de portadas. De momento sus juegos muestran una portada con el título; las alternativas llegan en el hito (d).

@@ -15,8 +15,7 @@ export interface Metadata {
 export interface Game {
   id: string;
   source: Source;
-  title: string | null;
-  installed: boolean;
+  title: string;
   installDir: string | null;
   playtimeMinutes: number | null;
   /** Segundos Unix. */

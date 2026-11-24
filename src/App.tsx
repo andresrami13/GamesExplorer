@@ -1,36 +1,44 @@
-import { useEffect, useState } from "react";
-import { LibraryGrid } from "./features/library/LibraryGrid";
+import { useEffect, useRef, useState } from "react";
+import { TopBar } from "./features/library/TopBar";
+import { HeroView } from "./modes/hero/HeroView";
 import { useLibrary } from "./state/library";
 
 export function App() {
   const { games, status, errors, start } = useLibrary();
   const [notice, setNotice] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void start();
   }, [start]);
 
-  const installed = games.filter((g) => g.installed).length;
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  const messages = [...errors, ...(notice ? [notice] : [])];
 
   return (
     <main className="app">
-      <header className="app-header">
-        <h1>Mis juegos</h1>
-        <p className="muted" aria-live="polite">
-          {status === "loading" ? "Leyendo tu biblioteca…" : `${games.length} juegos · ${installed} instalados`}
+      <TopBar count={games.length} searchRef={searchRef} />
+      {status === "loading" ? (
+        <p className="loading" aria-live="polite">
+          Leyendo tu biblioteca…
         </p>
-      </header>
-
-      {[...errors, ...(notice ? [notice] : [])].map((message) => (
-        <p key={message} className="notice" role="alert">
-          {message}
-        </p>
-      ))}
-
-      {status === "ready" && games.length === 0 && (
-        <p className="muted">No se encontró Steam ni Epic Games en este equipo.</p>
+      ) : (
+        <HeroView onError={setNotice} onSearch={() => searchRef.current?.focus()} />
       )}
-      <LibraryGrid games={games} onError={setNotice} />
+      {messages.length > 0 && (
+        <div className="notices">
+          {messages.map((message) => (
+            <p key={message} className="notice" role="alert">
+              {message}
+            </p>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

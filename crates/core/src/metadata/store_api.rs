@@ -12,7 +12,6 @@ const CACHE_TTL: Duration = Duration::from_secs(30 * 24 * 3600);
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoreInfo {
-    pub name: String,
     /// `game`, `dlc`, `demo`, `music`, `application`...
     pub kind: String,
     pub metadata: Metadata,
@@ -100,7 +99,6 @@ struct Envelope {
 struct Data {
     #[serde(rename = "type")]
     kind: String,
-    name: String,
     #[serde(default)]
     short_description: String,
     #[serde(default)]
@@ -124,7 +122,6 @@ fn parse_appdetails(app_id: u32, body: &[u8]) -> Result<Option<StoreInfo>> {
     let Some(data) = envelope.data.filter(|_| envelope.success) else { return Ok(None) };
     let description = decode_entities(data.short_description.trim());
     Ok(Some(StoreInfo {
-        name: data.name,
         kind: data.kind,
         metadata: Metadata {
             description: (!description.is_empty()).then_some(description),
@@ -162,7 +159,6 @@ mod tests {
             "genres":[{"id":"1","description":"Acci\u00f3n"},{"id":"25","description":"Aventura"}],
             "release_date":{"coming_soon":false,"date":"25 SEP 2025"}}}}"#;
         let info = parse_appdetails(1145350, body).unwrap().unwrap();
-        assert_eq!(info.name, "Hades II");
         assert!(info.is_playable());
         assert_eq!(info.metadata.genres, ["Acción", "Aventura"]);
         assert_eq!(info.metadata.year, Some(2025));

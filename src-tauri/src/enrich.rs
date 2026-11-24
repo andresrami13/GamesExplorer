@@ -1,5 +1,5 @@
 //! Completa en segundo plano lo que no está en disco de Steam: color dominante de la
-//! portada, nombre de los juegos no instalados y metadatos de la tienda.
+//! portada y metadatos de la tienda.
 //! Cada juego terminado se emite al frontend con el evento `game-updated`.
 
 use crate::state::AppState;
@@ -36,8 +36,8 @@ fn run(app: &AppHandle) {
         .filter(|g| g.steam_app_id().is_some() && (g.color.is_none() || g.metadata.is_none()))
         .cloned()
         .collect();
-    // Primero lo que el usuario más probablemente mira: instalado y jugado hace poco.
-    pending.sort_by_key(|g| (!g.installed, std::cmp::Reverse(g.last_played)));
+    // Primero lo jugado hace poco: es lo que el usuario más probablemente mira.
+    pending.sort_by_key(|g| std::cmp::Reverse(g.last_played));
 
     for (done, mut game) in pending.into_iter().enumerate() {
         let keep = enrich_one(&state, &mut game);
@@ -59,8 +59,8 @@ fn run(app: &AppHandle) {
     save(&state);
 }
 
-/// Devuelve `false` si el juego debe desaparecer: la tienda dice que no es jugable
-/// (DLC, banda sonora, herramienta) y no está instalado.
+/// Devuelve `false` si el juego debe desaparecer: la tienda dice que no es un juego
+/// (herramienta, banda sonora, SDK...).
 fn enrich_one(state: &AppState, game: &mut Game) -> bool {
     let Some(app_id) = game.steam_app_id() else { return true };
 
@@ -72,10 +72,9 @@ fn enrich_one(state: &AppState, game: &mut Game) -> bool {
     if game.metadata.is_none() {
         match state.store.fetch(app_id) {
             Ok(Some(info)) => {
-                if !info.is_playable() && !game.installed {
+                if !info.is_playable() {
                     return false;
                 }
-                game.title.get_or_insert(info.name);
                 game.metadata = Some(info.metadata);
             }
             // Sin ficha en la tienda (app retirada): se queda con lo que hay.

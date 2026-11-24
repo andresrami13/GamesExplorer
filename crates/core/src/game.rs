@@ -52,10 +52,7 @@ pub struct Metadata {
 pub struct Game {
     pub id: GameId,
     pub source: Source,
-    /// `None` cuando la fuente local no trae nombre (juegos de Steam no instalados);
-    /// lo rellena la Store API.
-    pub title: Option<String>,
-    pub installed: bool,
+    pub title: String,
     pub install_dir: Option<PathBuf>,
     pub playtime_minutes: Option<u32>,
     /// Segundos Unix.
@@ -67,12 +64,11 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(id: GameId, source: Source, launch: LaunchTarget) -> Self {
+    pub fn new(id: GameId, source: Source, title: String, launch: LaunchTarget) -> Self {
         Game {
             id,
             source,
-            title: None,
-            installed: false,
+            title,
             install_dir: None,
             playtime_minutes: None,
             last_played: None,

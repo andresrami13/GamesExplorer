@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import * as api from "../api/library";
 import type { Game } from "../domain/game";
-import { sortByTitle } from "../features/library/format";
 
 type Status = "loading" | "ready" | "error";
 
@@ -26,17 +25,15 @@ export const useLibrary = create<LibraryState>((set) => ({
     if (started) return; // StrictMode monta dos veces en desarrollo.
     started = true;
 
-    await api.onGameUpdated((game) =>
-      set((s) => ({ games: sortByTitle([...s.games.filter((g) => g.id !== game.id), game]) })),
-    );
+    await api.onGameUpdated((game) => set((s) => ({ games: s.games.map((g) => (g.id === game.id ? game : g)) })));
     await api.onGameRemoved((id) => set((s) => ({ games: s.games.filter((g) => g.id !== id) })));
 
     const cached = await api.getCachedLibrary();
-    if (cached.length > 0) set({ games: sortByTitle(cached), status: "ready" });
+    if (cached.length > 0) set({ games: cached, status: "ready" });
 
     try {
       const { games, errors } = await api.refreshLibrary();
-      set({ games: sortByTitle(games), errors, status: "ready" });
+      set({ games, errors, status: "ready" });
     } catch (e) {
       set((s) => ({ status: s.games.length > 0 ? "ready" : "error", errors: [String(e)] }));
     }

@@ -35,6 +35,8 @@ fn reads_steam_libraries_manifests_and_user_playtime() {
     write(&root.join("steamapps/appmanifest_228980.acf"), &acf(228980, "Steamworks Common Redistributables", 4));
     write(&second.join("steamapps/appmanifest_1145350.acf"), &acf(1145350, "Hades II", 6));
     write(&second.join("steamapps/appmanifest_999.acf"), "\"AppState\" { roto");
+    // StateFlags 1026: descargando, todavía no jugable.
+    write(&second.join("steamapps/appmanifest_400.acf"), &acf(400, "Portal", 1026));
 
     // SteamID64 76561197960265738 → accountid 10.
     write(
@@ -53,19 +55,16 @@ fn reads_steam_libraries_manifests_and_user_playtime() {
     let mut games = SteamProvider::at(root).load().unwrap();
     games.sort_by(|a, b| a.id.cmp(&b.id));
     let ids: Vec<&str> = games.iter().map(|g| g.id.as_str()).collect();
-    assert_eq!(ids, ["steam:1145350", "steam:440", "steam:570"]);
+    // 440 solo está en localconfig (jugado, no instalado): no aparece.
+    // 1145350 tiene StateFlags 6 (instalado con actualización pendiente): sí aparece.
+    assert_eq!(ids, ["steam:1145350", "steam:570"]);
 
     let hades = &games[0];
-    assert_eq!(hades.title.as_deref(), Some("Hades II"));
-    assert!(hades.installed, "StateFlags 6 = instalado con actualización pendiente");
+    assert_eq!(hades.title, "Hades II");
     assert_eq!(hades.install_dir.as_deref(), Some(second.join("steamapps/common/Hades II").as_path()));
+    assert_eq!(hades.playtime_minutes, None);
 
-    let tf2 = &games[1];
-    assert_eq!(tf2.title, None, "jugado pero no instalado: sin nombre hasta consultar la tienda");
-    assert!(!tf2.installed);
-    assert_eq!(tf2.playtime_minutes, Some(90));
-
-    let dota = &games[2];
+    let dota = &games[1];
     assert_eq!(dota.playtime_minutes, Some(5160));
     assert_eq!(dota.last_played, Some(1710000000));
     assert_eq!(dota.launch, LaunchTarget::Steam { app_id: 570 });
@@ -94,6 +93,6 @@ fn reads_epic_manifests_skipping_dlc_and_incomplete_installs() {
     let alan = &games[0];
     assert_eq!(alan.id, "epic:AlanApp");
     assert_eq!(alan.source, Source::Epic);
-    assert_eq!(alan.title.as_deref(), Some("Alan"));
+    assert_eq!(alan.title, "Alan");
     assert!(alan.launch.launch_uri().starts_with("com.epicgames.launcher://apps/ns%3Acat%3AAlanApp"));
 }
