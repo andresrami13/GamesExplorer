@@ -1,0 +1,114 @@
+/* Tema oscuro. Contrastes medidos sobre --bg: --text 17:1, --muted 9:1, --focus 13:1 (mínimo 4,5:1). */
+:root {
+  --bg: #0e0b14;
+  --surface: #1a1524;
+  --surface-2: #2a2338;
+  --text: #f3eee6;
+  --muted: #b9b0c4;
+  --focus: #ffd479;
+  --danger-bg: #3a1620;
+  --radius: 10px;
+  --font-title: "Fraunces Variable", Georgia, serif;
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.muted { color: var(--muted); }
+
+.app { padding: 32px 40px 48px; }
+
+.app-header h1 {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.notice {
+  background: var(--danger-bg);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+
+.grid {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 24px 20px;
+}
+
+/* El navegador no pinta ni decodifica las tarjetas fuera de pantalla. */
+.grid > li {
+  content-visibility: auto;
+  contain-intrinsic-size: 160px 300px;
+}
+
+.card {
+  all: unset;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.card-cover {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--accent), var(--surface) 85%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+  transition: transform 160ms ease-out;
+}
+
+.card:hover .card-cover,
+.card:focus-visible .card-cover { transform: translateY(-4px) scale(1.02); }
+
+.card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-placeholder {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  padding: 14px;
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
+}
+
+.card-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta { color: var(--muted); font-size: 0.8rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card-cover { transition: none; }
+}

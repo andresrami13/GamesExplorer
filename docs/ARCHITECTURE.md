@@ -1,4 +1,6 @@
-# GamesExplorer: propuesta de arquitectura (paso 1, v2, pendiente de OK)
+# Mis juegos: arquitectura
+
+Aprobada el 24/11/2026. Repositorio `GamesExplorer`; la app se llama **Mis juegos**.
 
 Leyenda: **[V]** verificado o conocimiento consolidado · **[I]** inferencia que hay que comprobar en tu máquina.
 
@@ -57,28 +59,27 @@ Del mockup: "41/50 logros" solo existe con API key de Steam; sin key se oculta e
 │ library store (Zustand): búsqueda, filtros, orden, selección   │
 │ input: mapa de acciones único ← teclado + Gamepad API          │
 │ image pipeline: ventana visible ±1 página, precarga            │
-└───────────── invoke() / eventos ─────── protocolo sbimg:// ────┘
-┌──────────────── Backend (Rust, src-tauri) ─────────────────────┐
-│ steam::locator   registro HKCU\Software\Valve\Steam (SteamPath) │
-│ steam::vdf       parser KeyValues texto (libraryfolders, acf,   │
-│                  localconfig)                                   │
-│ steam::library   une manifests + localconfig + Web API → Game   │
-│ epic::provider   *.item de Epic → Game  (trait LibraryProvider) │
-│ manual::provider juegos añadidos a mano (.exe directo)          │
-│ images::cache    librarycache → caché propia → CDN (descarga)   │
-│ images::color    color dominante (miniatura 32px + k-means,     │
-│                  ajustado a contraste 4,5:1) guardado en índice │
-│ metadata::store  Store API con cola, límites y caché            │
-│ metadata::webapi Web API opcional (key en ajustes)              │
-│ persistence      settings.json, favorites.json, collections.json│
-│                  en %APPDATA%\SteamBinder                       │
-│ launcher         URI de Steam/Epic; .exe solo para manuales     │
+└───────────── invoke() / eventos ─────── protocolo img:// ──────┘
+┌──── src-tauri (ventana, comandos, protocolo img, enriquecedor) ─┐
+│ commands   get_cached_library · refresh_library · launch_game   │
+│ protocol   img://localhost/steam/<appid>/<tipo> → bytes          │
+│ enrich     hilo de fondo: color + Store API → evento game-updated│
+└──────────────────────────────┬──────────────────────────────────┘
+┌──── crates/core (Rust puro, se prueba sin ventana) ─────────────┐
+│ vdf              parser KeyValues texto                          │
+│ steam::*         registro, libraryfolders, acf, localconfig      │
+│ epic             manifiestos *.item       (trait LibraryProvider)│
+│ manual           juegos añadidos a mano (.exe directo) · hito d  │
+│ images           caché propia → librarycache → CDN, color        │
+│ metadata         Store API con límite y caché; Web API · hito d  │
+│ snapshot         instantánea enriquecida para arrancar rápido    │
+│ persistence      JSON atómico en %APPDATA%\MisJuegos             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 Decisiones clave:
-- **Arranque < 2 s:** al abrir se sirve `index.json` (snapshot de la última lectura con colores ya calculados) y se pinta; la relectura de Steam corre en segundo plano y emite un diff. Sin caché (primer arranque) puede tardar más, y se indica con progreso.
-- **Imágenes sin pasar por IPC:** un protocolo propio `sbimg://<appid>/<tipo>` resuelve en Rust la cadena librarycache → caché propia → CDN. El frontend solo usa URLs; nada de base64.
+- **Arranque < 2 s:** al abrir se sirve `library.json` (en %LOCALAPPDATA%\MisJuegos) (snapshot de la última lectura con colores ya calculados) y se pinta; la relectura de Steam corre en segundo plano y cada juego completado llega con el evento `game-updated`. Sin caché (primer arranque) puede tardar más, y se indica con progreso.
+- **Imágenes sin pasar por IPC:** un protocolo propio `img://localhost/steam/<appid>/<tipo>` (`http://img.localhost/...` en Windows) resuelve en Rust la cadena librarycache → caché propia → CDN. El frontend solo usa URLs; nada de base64.
 - **Virtualización:** solo se montan las portadas de la página actual ±1; texturas Three.js con LRU.
 - **Datos de usuario:** JSON escritos de forma atómica (archivo temporal + rename). La API key se guarda en el Credential Manager de Windows (crate `keyring`), no en JSON en claro. No se piden ni guardan contraseñas.
 - **Fuentes:** Fraunces e Inter empaquetadas en la app (licencia OFL), sin cargarlas de Google en tiempo de ejecución.
@@ -108,18 +109,13 @@ GamesExplorer/
 │  ├─ images/                   useCover, prefetch, LRU de texturas
 │  ├─ ui/                       botones, foco visible, tokens de tema
 │  └─ assets/                   fuentes, sonido de página
-├─ src-tauri/
-│  ├─ Cargo.toml · tauri.conf.json
-│  └─ src/
-│     ├─ main.rs · commands.rs
-│     ├─ library/ provider.rs (trait) · game.rs
-│     ├─ steam/   locator.rs · vdf.rs · library.rs · localconfig.rs
-│     ├─ epic/    manifests.rs
-│     ├─ manual/  manual.rs · exe_icon.rs
-│     ├─ images/  cache.rs · protocol.rs · color.rs
-│     ├─ metadata/ store_api.rs · web_api.rs · rate_limit.rs
-│     ├─ persistence.rs · launcher.rs · error.rs
-│     └─ tests/fixtures/
+├─ Cargo.toml                   workspace
+├─ crates/core/                 lógica sin dependencias de ventana
+│  ├─ src/ vdf.rs · game.rs · library.rs · snapshot.rs · persistence.rs · http.rs · paths.rs
+│  │       steam/ (locator, library_folders, manifest, localconfig) · epic/
+│  │       images/ (caché, color) · metadata/ (store_api, rate_limit)
+│  └─ tests/library.rs          instalaciones de Steam y Epic simuladas
+├─ src-tauri/                   main.rs · state.rs · commands.rs · protocol.rs · enrich.rs
 └─ packaging/msix/              AppxManifest.xml, iconos, build-msix.ps1
 ```
 
@@ -129,6 +125,8 @@ GamesExplorer/
 - **b)** Modo Álbum con curl 3D, teclado, arrastre de esquina, sonido y mando.
 - **c)** Modos Hero + carrusel y Funda + disco.
 - **d)** Ajustes, juegos manuales con .exe, SteamGridDB opcional, favoritos, colecciones, filtros por género, F11 y modo TV, empaquetado MSIX.
+
+**Cambio respecto a la propuesta:** la lógica vive en `crates/core` y no en `src-tauri`. Así se compila y se prueba sin WebView2 (también en CI y en Linux) y `src-tauri` queda como capa fina.
 
 ## 6. Limitación de entorno
 
